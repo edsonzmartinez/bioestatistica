@@ -24,7 +24,7 @@
 #             0 if censored and 1 if not censored                  #
 # Treatment = Treatment indicator variable:                        #
 #             0 if placebo and 1 if drug X                         #
-# Sex       = Sex
+# Sex       = Sex                                                  #
 ####################################################################
 # Lendo a base de dados
 urlfile = "https://raw.githubusercontent.com/edsonzmartinez/basesdedados/main/survival_trial_rats.csv"
