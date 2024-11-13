@@ -116,12 +116,21 @@ round(cor(w[,-(1:2)]),3)
 
 # Inversa da matriz W'W
 solve(t(W)%*%W)
+
 # VIF obtidos da função vif do pacote car
 car::vif(model1)
+
+# Usando o pacote performance para encontrar o VIF
+# tolerance = 1/vif
+performance::check_collinearity(model1)
+plot(performance::check_collinearity(model1))
 
 # Normal plot com envelope
 library(glmtoolbox)
 glmtoolbox::envelope(model1, rep=5000, col="red", type="internal")
+
+# Outras figuras
+performance::check_model(model1)
 
 # Modelo sem BSA
 m3 <- lm(formula = BP ~ Age + Weight + Pulse + Stress, data = w)
