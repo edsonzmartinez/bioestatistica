@@ -7,6 +7,7 @@ library(lme4)
 library(jtools)
 library(lattice)
 library(ggResidpanel)
+library(performance)
 ####################################################################
 # Lendo a base de dados
 urlfile = "https://raw.githubusercontent.com/edsonzmartinez/basesdedados/main/Potthoff.csv"
@@ -43,6 +44,10 @@ ranef(model1)$num
 lattice::dotplot(ranef(model1, condVar=TRUE), strip = FALSE)
 # Coeficientes
 coefficients(model1)$num
+# Nakagawa’s R2 for mixed models
+# Conditional R2: takes both the fixed and random effects into account
+# Marginal R2: considers only the variance of the fixed effects
+performance::r2_nakagawa(model1)
 # Gráfico de perfis
 # Indivíduo k
 id <- "Indivíduo 1"
@@ -56,6 +61,11 @@ linha <- function(x,a,b) linha <- a+b*x
 lines(c(8,14),c(linha(8,a,b),linha(14,a,b)),col="blue")
 # Preditos
 predict(model1)
+# Breusch-Pagan test (1979) for (non-)constant error variance
+performance::check_heteroscedasticity(model1)
+plot(performance::check_heteroscedasticity(model1))
+# Distribuição dos dados e dos resíduos
+plot(performance::check_distribution(model1))
 # Gráfico de resíduos
 plot(model1, type=c("p","smooth"), col.line=1, pch=18)
 # Scale-location plot
