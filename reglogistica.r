@@ -192,6 +192,16 @@ car::vif(model)
 # Nota: GVIF^(1/(2*Df)) é o adjusted generalized standard error inflation factor (aGSIF)
 # Alternativa: glmtoolbox::gvif(model)
 # Valores de aGSIF próximos a 1 não indicam forte colinearidade
+# Gráfico
+w     <- car::vif(model)
+labls <- names(w[,1])
+aGSIF <- as.numeric(w[,3])
+par(mar=c(5,14,1,3))
+bplot <- barplot(rev(aGSIF),horiz=TRUE,names.arg=rev(labls),
+                 las=1,col="#FF6666",xlim=c(0,1.4),
+                 xlab="Adjusted generalized standard error inflation factor (aGSIF)")
+text(x=aGSIF+.1,y=rev(bplot),round(aGSIF,3),cex=1)
+
 
 
 
