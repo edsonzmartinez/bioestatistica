@@ -186,6 +186,13 @@ round(exp(cbind(OR = coef(model), confint(model))),2)
 # Distância de Cook
 plot(model, which = 4)
 
+# Generalized variance inflation factor (GVIF)
+# Fox J., Monette G. (1992) Generalized collinearity diagnostics, JASA 87, 178–183.
+car::vif(model)
+# Nota: GVIF^(1/(2*Df)) é o adjusted generalized standard error inflation factor (aGSIF)
+# Alternativa: glmtoolbox::gvif(model)
+# Valores de aGSIF próximos a 1 não indicam forte colinearidade
+
 
 
 
