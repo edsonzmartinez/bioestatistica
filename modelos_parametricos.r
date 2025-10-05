@@ -1,34 +1,32 @@
  library(survival)
- library(bshazard)
- library(AdequacyModel)
+ library(bshazard)        # Para estimar a função de risco h(t) com suavização não paramétrica
+ library(AdequacyModel)   # Para gerar o TTT plot com dados sem censuras
+ library(EstimationTools) # Para gerar o TTT plot com dados censurados
  
  # Modificando a função TTT do pacote AdequacyModel, para permitir retonar
- # os valores de 
+ # os valores de i/n e Trn(i)
  
  TTT2 <- function (x, lwd = 2, lty = 2, col = "black", grid = TRUE, ...) 
-{   n <- length(x)
-    y <- order(x)
-    sortx <- x[y]
-    Trn <- rep(NA, times = n)
-    r <- rep(NA, times = n)
-    Trn[1] <- n * sortx[1]
-    r[1] <- 1/n
-    for (i in 2:n) {
-        Trn[i] <- Trn[i - 1] + (n - i + 1) * (sortx[i] - sortx[i - 
-            1])
-        r[i] <- i/n
-    }
-    plot(r, Trn/Trn[n], xlab = "i/n", ylab = "T(i/n)", xlim = c(0, 
-        1), ylim = c(0, 1), main = "", type = "l", lwd = lwd, 
-        lty = 1, col = col, ...)
-    lines(c(0, 1), c(0, 1), lty = lty, lwd = 1, ...)
-    if (grid == "TRUE") 
-        grid()
-	w <- data.frame(i.n = r, G.i.n = Trn/Trn[n])
-	return(w)
-}
- 
- 
+ {   n <- length(x)
+     y <- order(x)
+     sortx <- x[y]
+     Trn <- rep(NA, times = n)
+     r <- rep(NA, times = n)
+     Trn[1] <- n * sortx[1]
+     r[1] <- 1/n
+     for (i in 2:n) {
+         Trn[i] <- Trn[i - 1] + (n - i + 1) * (sortx[i] - sortx[i - 1])
+         r[i] <- i/n
+     }
+     plot(r, Trn/Trn[n], xlab = "i/n", ylab = "T(i/n)", xlim = c(0, 
+         1), ylim = c(0, 1), main = "", type = "l", lwd = lwd, 
+         lty = 1, col = col, ...)
+     lines(c(0, 1), c(0, 1), lty = lty, lwd = 1, ...)
+     if (grid == "TRUE") 
+         grid()
+	 w <- data.frame(i.n = r, G.i.n = Trn/Trn[n])
+	 return(w)
+ }
  
  # Modelo exponencial
  
@@ -38,7 +36,7 @@
  50, 55, 62, 66, 73, 74, 75, 83, 88, 89,157)
  d <- rep(1,length(x)) 
  
- sur <- Surv(time = x,d)
+ sur <- Surv(time = x, d)
  fit <- survfit(sur ~ 1)                        # Kaplan Meier
  reg <- survreg(sur ~ 1, dist = "exponential")  # Exponential model
  lambda <- 1 / exp(coef(reg))
@@ -57,36 +55,38 @@
          color = "red", size = 1) +
   add_risktable()
 
-
  # Gráfico de Kaplan-Meier com a curva ajustada e uma legenda
-ggsurvfit(fit, type = "survival") +
-  geom_step(aes(x = time, y = estimate, color = "Kaplan-Meier"), linewidth = 1) +
-  geom_line(
-    data = exp_curve,
-    aes(x = time, y = surv, color = "Exponencial"),
-    linewidth = 1) +
-  scale_color_manual(values = c("Kaplan-Meier" = "black", "Exponencial" = "red")) +
-  labs(x = "Tempo (dias)", y = "S(t) estimada", color = NULL) +
-  scale_y_continuous(limits = c(0, 1)) +
-  add_censor_mark() +
-  add_risktable() +
-  theme_bw(base_size = 13) + 
-  theme(
-    legend.position = c(0.8, 0.85),  # posição dentro do gráfico
-    legend.background = element_rect(fill = "white", color = "gray70", linewidth = 0.3),
-    legend.key = element_blank(),
-    legend.text = element_text(size = 11)
-  )
+ ggsurvfit(fit, type = "survival") +
+   geom_step(aes(x = time, y = estimate, color = "Kaplan-Meier"), linewidth = 1) +
+   geom_line(
+     data = exp_curve,
+     aes(x = time, y = surv, color = "Exponencial"),
+     linewidth = 1) +
+   scale_color_manual(values = c("Kaplan-Meier" = "black", "Exponencial" = "red")) +
+   labs(x = "Tempo (dias)", y = "S(t) estimada", color = NULL) +
+   scale_y_continuous(limits = c(0, 1)) +
+   add_censor_mark() +
+   add_risktable() +
+   theme_bw(base_size = 13) + 
+   theme(
+     legend.position = c(0.8, 0.85),  # posição dentro do gráfico
+     legend.background = element_rect(fill = "white", color = "gray70", linewidth = 0.3),
+     legend.key = element_blank(),
+     legend.text = element_text(size = 11)
+   )
    
-
- # Média
+ # Estimativas, média, AIC
  summary(reg)
  message("Média = ",round(exp(coef(reg)),1))
  message("AIC = ",round(AIC(reg),2))
  
- # Função risco estimada
- fit <- bshazard(sur ~ 1, nbin = 100)
- plot(fit, ylim = c(0,.1),xlab = "Tempo (dias)", ylab = "h(t) estimada", las = 1)
+ # Função risco estimada (pacote bshazard)
+ fith <- bshazard(sur ~ 1, nbin = 100)
+ plot(fith, ylim = c(0,.1), xlab = "Tempo (dias)", ylab = "h(t) estimada", las = 1)
+ # Uma alternativa ao pacote bshazard é o pacote kernhaz
+ fith <- khazard(times = x, delta = rep(1,length(x)))
+ plot(fith)
+ # No pacote kernhaz, o kernel de Epanechnikov é usado como default
 
  # TTT plot
  # A função TTT do pacote AdequacyModel só funciona para dados sem censura
@@ -103,7 +103,7 @@ ggsurvfit(fit, type = "survival") +
  d <- c(0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0,
  1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
  
- sur <- Surv(time = x,d)
+ sur <- Surv(time = x, d)
  fit <- survfit(sur ~ 1)                      # Kaplan Meier
  reg <- survreg(sur ~ 1, dist = "weibull")    # Weibull model
  gamma.est <- 1 / reg$scale
@@ -123,7 +123,7 @@ ggsurvfit(fit, type = "survival") +
          color = "red", size = 1) +
   add_risktable() 
  
- # Média
+ # Estimativas, média, AIC
  summary(reg)
  message("Alpha estimado = ",round(alpha.est,2))
  message("Gamma estimado = ",round(gamma.est,2))
@@ -170,7 +170,7 @@ ggsurvfit(fit, type = "survival") +
    add_pvalue(caption = "Log-rank {p.value}", rho=0) + 
    scale_y_continuous(limits = c(0,1)) + add_risktable() 
 
- sur <- Surv(time = t,d)
+ sur <- Surv(time = t, d)
  reg <- survreg(sur ~ Treatment, dist = "exponential")  # Exponential regression
  summary(reg)
  AIC(reg)
@@ -179,22 +179,21 @@ ggsurvfit(fit, type = "survival") +
  ttt <- EstimationTools::TTTE_Analytical(Surv(t,d) ~ Treatment, method = "censored", scaled = FALSE)
 
 
-
-
  t <- c(3, 5, 6, 7, 8, 9, 10, 10, 12, 15, 15, 18, 19, 20, 22, 25, 28, 30, 40, 45)
  # vector of censoring indicator. 0 - censored, 1 - uncensored
  d <- c(1, 1, 1, 1, 1, 1,  1,  0,  1,  1,  0,  1,  1,  1,  1,  1,  1,  1,  1,  0)
  # Kaplan-Meier
- sur <- Surv(time = t,d)
+ sur <- Surv(time = t, d)
  km_fit <- survfit(sur ~ 1)   
  km_fit               # Kaplan Meier
  summary(km_fit)
  # Gráfico de Kaplan-Meier
- plot(km_fit,las=1,bty="l",col="red",lwd=1,xlab="Tempo (semanas)",ylab="S(t) estimada")
+ plot(km_fit, las=1, bty="l", col="red", lwd=1, xlab="Tempo (semanas)", ylab="S(t) estimada")
 
  # TTT plot
  ttt <- EstimationTools::TTTE_Analytical(Surv(t,d) ~ 1, method = "censored", scaled = FALSE)
 
  # Função risco estimada
  fit <- bshazard(sur ~ 1, nbin = 100)
- plot(fit, ylim = c(0,0.4),xlab = "Tempo (dias)", ylab = "h(t) estimada", las = 1)
+ plot(fit, ylim = c(0,0.4), xlab = "Tempo (dias)", ylab = "h(t) estimada", las = 1)
+
