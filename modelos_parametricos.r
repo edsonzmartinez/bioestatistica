@@ -93,7 +93,9 @@
  AdequacyModel::TTT(x, lwd = 2, col = "blue")
 
 
- # Modelo Weibull
+ ################################################################################
+ # Modelo Weibull                                                               #
+ ################################################################################
 
  # Dados
  x <- c(1, 1, 2, 6, 10, 11, 15, 15, 16, 16, 17, 18, 19, 21, 21, 22, 24, 26, 28, 
@@ -133,13 +135,21 @@
  # Função risco estimada
  fit <- bshazard(sur ~ 1, nbin = 100)
  plot(fit, ylim = c(0,.06),xlab = "Tempo (dias)", ylab = "h(t) estimada", las = 1)
+ # Comparando com a função risco estimada pelo modelo Weibull
+ Swei <- function(x,a,sigma) Swei <- exp(-(x/sigma)^a)
+ hwei <- function(x,a,sigma) hwei <- dweibull(x,a,sigma)/Swei(x,a,sigma)
+ # Alternativa: hwei <- function(x,a,sigma) hwei <- (a/sigma)*(x/sigma)^(a-1)
+ x <- seq(0,10,0.01)
+ points(x,hwei(x,gamma.est,alpha.est),bty="l",col="red",lwd=2,type="l")
+ legend(0,0.06,col=c("black","red"),lwd=2,legend=c("bshazard","Weibull"))
 
  # TTT plot
  ttt <- EstimationTools::TTTE_Analytical(Surv(x,d) ~ 1, method = "censored", scaled = FALSE)
 
 
-
- # Modelo de regressão exponencial
+ ################################################################################
+ # Modelo de regressão exponencial                                              #
+ ################################################################################
  
  # Dados
  
@@ -178,6 +188,9 @@
  # TTT plot
  ttt <- EstimationTools::TTTE_Analytical(Surv(t,d) ~ Treatment, method = "censored", scaled = FALSE)
 
+ 
+ # Tempos de reincidência, em meses, de 20 pacientes com câncer de bexiga (Colosimo e Giolo, 2006) 
+ # que foram submetidos a um tratamento cirúrgico feito por laser.
 
  t <- c(3, 5, 6, 7, 8, 9, 10, 10, 12, 15, 15, 18, 19, 20, 22, 25, 28, 30, 40, 45)
  # vector of censoring indicator. 0 - censored, 1 - uncensored
@@ -195,5 +208,26 @@
 
  # Função risco estimada
  fit <- bshazard(sur ~ 1, nbin = 100)
- plot(fit, ylim = c(0,0.4), xlab = "Tempo (dias)", ylab = "h(t) estimada", las = 1)
+ plot(fit, ylim = c(0,0.4), xlab = "Tempo (meses)", ylab = "h(t) estimada", las = 1)
+
+ reg.exp <- survreg(sur ~ 1, dist = "exponential")    # Exponential model
+ reg.wei <- survreg(sur ~ 1, dist = "weibull")        # Weibull model
+ AIC(reg.exp, reg.wei)
+
+ # Médias
+ gamma.est <- 1 / reg.wei$scale
+ alpha.est <- exp(reg.wei$coefficients)
+ message("Média (modelo exponencial) = ",round(exp(coef(reg.exp)),1))
+ message("Média (modelo Weibull) = ",round(alpha.est*gamma(1+1/gamma.est),1))
+
+ # Função risco estimada
+ fit <- bshazard(sur ~ 1, nbin = 100)
+ plot(fit, ylim = c(0,0.2),xlab = "Tempo (dias)", ylab = "h(t) estimada", las = 1)
+ # Comparando com as funções risco estimadas pelos modelos Weibull e exponencial
+ gamma.est <- 1 / reg.wei$scale
+ alpha.est <- exp(reg.wei$coefficients)
+ x <- seq(0,44.5,0.01)
+ points(x,hwei(x,gamma.est,alpha.est),bty="l",col="red",lwd=2,type="l")
+ points(x,hwei(x,1,exp(coef(reg.exp))),bty="l",col="blue",lwd=2,type="l")
+ legend(0,0.2,col=c("black","red","blue"),lwd=2,legend=c("bshazard","Weibull","Exponencial"))
 
